@@ -58,7 +58,7 @@ class NTXent(torch.nn.Module):
 
         # Accuracy
         sim_arg_sort = sim.argsort(dim=1, descending=True)
-        pos_idx = (sim_arg_sort == target).nonzero(as_tuple=True)[0]
+        pos_idx = (sim_arg_sort == target.unsqueeze(1)).nonzero(as_tuple=True)[0]
         top1_sum = (pos_idx == 0).float().sum()
         top5_sum = (pos_idx < 5).float().sum()
 
