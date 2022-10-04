@@ -145,8 +145,8 @@ def postfix_str(top1_acc, top5_acc, loss=None):
     str_ = ""
     if loss is not None:
         str_ += f"loss: {loss:5.3f}, "
-    str_ += f"top1: {(top1_acc * 100):4.1f}, "
-    str_ += f"top5: {(top5_acc * 100):4.1f}"
+    str_ += f"top1:{(top1_acc * 100):5.1f}, "
+    str_ += f"top5:{(top5_acc * 100):5.1f}"
     return str_
 
 

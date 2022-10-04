@@ -21,14 +21,14 @@ def step(imgs, device, model, criterion, optimizer=None):
     imgs = utils.move_iterable_to(imgs, device)
 
     _, feats = model(imgs)
-    loss, sums = criterion(feats)
+    loss, top_acc = criterion(feats)
 
     if optimizer is not None:  # i.e. training mode
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-    return loss.item(), sums
+    return loss.item(), top_acc
 
 
 def train(model, criterion, optimizer, train_loader, val_loader, args):
@@ -51,11 +51,11 @@ def train(model, criterion, optimizer, train_loader, val_loader, args):
 
         pbar = tqdm(train_loader, ncols=100)
         for imgs, _ in pbar:
-            loss, sums = step(imgs, args.device, model, criterion, optimizer)
+            loss, top_acc = step(imgs, args.device, model, criterion, optimizer)
             running_loss += loss
-            top1_sum, top5_sum = sums
-            top1_acc = top1_sum / (train_loader.batch_size * 2)
-            top5_acc = top5_sum / (train_loader.batch_size * 2)
+            (top1_sum, top5_sum), batch_size = top_acc
+            top1_acc = top1_sum / batch_size
+            top5_acc = top5_sum / batch_size
             running_top1 += top1_acc
             running_top5 += top5_acc
             pbar.set_postfix_str(utils.postfix_str(top1_acc, top5_acc, loss))
@@ -72,15 +72,15 @@ def train(model, criterion, optimizer, train_loader, val_loader, args):
         model.eval()
         criterion.enforce_batch_size(False)
 
+        n_samples = 0
         running_top1 = 0.0
         running_top5 = 0.0
-        n_samples = 0
 
         pbar = tqdm(val_loader, ncols=70)
         for imgs, _ in pbar:
-            batch_size = 2 * imgs[0].size(0)  # because of the augmentation
+            _, (top_sums, batch_size) = step(imgs, args.device, model, criterion)
             n_samples += batch_size
-            _, (top1_sum, top5_sum) = step(imgs, args.device, model, criterion)
+            top1_sum, top5_sum = top_sums
             top1_acc = top1_sum / batch_size
             top5_acc = top5_sum / batch_size
             running_top1 += top1_sum
