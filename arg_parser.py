@@ -29,7 +29,7 @@ def parse_arguments(mode="simclr"):
         parser.add_argument("--reload", type=str, default=None)
         parser.add_argument("--seed", type=int, default=42)
         parser.add_argument("--projection_dim", type=int, default=128)
-        parser.add_argument("--temperature", type=float, default=0.07)
+        parser.add_argument("--temperature", type=float, default=0.1)
         parser.add_argument("--epochs", type=int, default=300)
         parser.add_argument("--out_dir", type=str, default=".")
 
