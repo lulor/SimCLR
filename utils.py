@@ -62,7 +62,7 @@ def setup_logging(
         logger.addHandler(console_handler)
 
     def exception_handler(ex_type, ex, tb):
-        logger.info("\n" + "".os.path.join(traceback.format_exception(ex_type, ex, tb)))
+        logger.info("\n%s", os.path.join(traceback.format_exception(ex_type, ex, tb)))
 
     sys.excepthook = exception_handler
 
