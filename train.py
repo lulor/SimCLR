@@ -1,8 +1,8 @@
 import logging
 import os
 
-from torch import optim
-from tqdm.auto import tqdm
+import torch
+from tqdm import tqdm
 
 import utils
 from arg_parser import parse_arguments
@@ -59,6 +59,7 @@ def train(model, criterion, optimizer, train_dl, device):
     )
 
 
+@torch.no_grad()
 def val(model, criterion, val_dl, device):
 
     model.eval()
@@ -127,7 +128,7 @@ def main():
 
     criterion = NTXent(args.temperature, args.batch_size, args.device)
 
-    optimizer = optim.Adam(
+    optimizer = torch.optim.Adam(
         model.parameters(),
         lr=args.lr,
         weight_decay=args.weight_decay,
