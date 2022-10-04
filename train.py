@@ -31,89 +31,74 @@ def step(imgs, device, model, criterion, optimizer=None):
     return loss.item(), top_acc
 
 
-def train(model, criterion, optimizer, train_loader, val_loader, args):
+def train(model, criterion, optimizer, train_dl, device):
 
-    not_improved = 0
-    best_val_top5_acc = args.best_val_top5_acc
+    model.train()
+    criterion.enforce_batch_size()  # all batches have the same size
 
-    for epoch in range(args.first_epoch, args.epochs + 1):
+    running_loss = 0.0
+    running_top1 = 0.0
+    running_top5 = 0.0
 
-        logging.info("Epoch [%i/%i]", epoch, args.epochs)
+    pbar = tqdm(train_dl, ncols=100)
+    for imgs, _ in pbar:
+        loss, top_acc = step(imgs, device, model, criterion, optimizer)
+        running_loss += loss
+        (top1_sum, top5_sum), batch_size = top_acc
+        top1_acc = top1_sum / batch_size
+        top5_acc = top5_sum / batch_size
+        running_top1 += top1_acc
+        running_top5 += top5_acc
+        pbar.set_postfix_str(utils.postfix_str(top1_acc, top5_acc, loss))
 
-        ### Training ###
+    logging.info(
+        "Training complete [avg_loss: %.4f, top1: %.2f, top5: %.2f]",
+        running_loss / len(train_dl),
+        running_top1 / len(train_dl) * 100,
+        running_top5 / len(train_dl) * 100,
+    )
 
-        model.train()
-        criterion.enforce_batch_size()  # all batches have the same size
 
-        running_loss = 0.0
-        running_top1 = 0.0
-        running_top5 = 0.0
+def val(model, criterion, val_dl, device):
 
-        pbar = tqdm(train_loader, ncols=100)
-        for imgs, _ in pbar:
-            loss, top_acc = step(imgs, args.device, model, criterion, optimizer)
-            running_loss += loss
-            (top1_sum, top5_sum), batch_size = top_acc
-            top1_acc = top1_sum / batch_size
-            top5_acc = top5_sum / batch_size
-            running_top1 += top1_acc
-            running_top5 += top5_acc
-            pbar.set_postfix_str(utils.postfix_str(top1_acc, top5_acc, loss))
+    model.eval()
+    criterion.enforce_batch_size(False)
 
-        logging.info(
-            "Training complete [avg_loss: %.4f, top1: %.2f, top5: %.2f]",
-            running_loss / len(train_loader),
-            running_top1 / len(train_loader) * 100,
-            running_top5 / len(train_loader) * 100,
-        )
+    n_samples = 0
+    running_top1 = 0
+    running_top5 = 0
 
-        ### Validation ###
+    pbar = tqdm(val_dl, ncols=70)
+    for imgs, _ in pbar:
+        _, (top_sums, batch_size) = step(imgs, device, model, criterion)
+        n_samples += batch_size
+        top1_sum, top5_sum = top_sums
+        top1_acc = top1_sum / batch_size
+        top5_acc = top5_sum / batch_size
+        running_top1 += top1_sum
+        running_top5 += top5_sum
+        pbar.set_postfix_str(utils.postfix_str(top1_acc, top5_acc))
 
-        model.eval()
-        criterion.enforce_batch_size(False)
+    val_top5_acc = running_top5 / n_samples * 100
 
-        n_samples = 0
-        running_top1 = 0.0
-        running_top5 = 0.0
+    logging.info(
+        "Validation complete [top1: %.2f, top5: %.2f]",
+        running_top1 / n_samples * 100,
+        val_top5_acc,
+    )
 
-        pbar = tqdm(val_loader, ncols=70)
-        for imgs, _ in pbar:
-            _, (top_sums, batch_size) = step(imgs, args.device, model, criterion)
-            n_samples += batch_size
-            top1_sum, top5_sum = top_sums
-            top1_acc = top1_sum / batch_size
-            top5_acc = top5_sum / batch_size
-            running_top1 += top1_sum
-            running_top5 += top5_sum
-            pbar.set_postfix_str(utils.postfix_str(top1_acc, top5_acc))
-
-        val_top5_acc = running_top5 / n_samples * 100
-
-        logging.info(
-            "Validation complete [top1: %.2f, top5: %.2f]",
-            running_top1 / n_samples * 100,
-            val_top5_acc,
-        )
-
-        if val_top5_acc > best_val_top5_acc:
-            best_val_top5_acc = val_top5_acc
-            not_improved = 0
-            logging.info("Improved\n")
-        else:
-            not_improved += 1
-            logging.info("Not improving since %i epochs\n", not_improved)
-
-        state = utils.build_state(model, optimizer, best_val_top5_acc, epoch)
-        utils.save_checkpoint(args.out_dir, state, not_improved == 0, "last_model.pth")
+    return val_top5_acc
 
 
 def main():
+
     args = parse_arguments()
     if args.device is None:
         args.device = utils.get_device()
 
     args.out_dir = utils.get_run_out_dir(args.out_dir)
     utils.setup_logging(os.path.join(args.out_dir, "logs"))
+
     logging.debug(args)
     logging.info("Using device %s\n", args.device)
 
@@ -121,15 +106,17 @@ def main():
 
     ### Dataset and DataLoaders ###
 
-    dataset = BIOSTEC2018(
-        args.dataset_dir,
-        split="train",
-        transform=ContrastiveTransformations(train_transformations(ds_stats)),
+    train_ds, val_ds = utils.split_dataset(
+        BIOSTEC2018(
+            args.dataset_dir,
+            split="train",
+            transform=ContrastiveTransformations(train_transformations(ds_stats)),
+        ),
+        split=0.8,
     )
-    train_ds, val_ds = utils.split_dataset(dataset, split=0.8)
 
-    train_loader = utils.build_data_loader(train_ds, args.batch_size, mode="train")
-    val_loader = utils.build_data_loader(val_ds, args.batch_size, mode="eval")
+    train_dl = utils.build_data_loader(train_ds, args.batch_size, mode="train")
+    val_dl = utils.build_data_loader(val_ds, args.batch_size, mode="eval")
 
     ### Model, Loss and Optimizer ###
 
@@ -151,15 +138,31 @@ def main():
     if args.reload is not None:
         checkpoint = utils.load_checkpoint(args.reload)
         epoch, best_val_top5_acc = utils.resume_from_state(checkpoint, model, optimizer)
-        args.first_epoch = epoch + 1
-        args.best_val_top5_acc = best_val_top5_acc
+        first_epoch = epoch + 1
     else:
-        args.first_epoch = 1
-        args.best_val_top5_acc = 0.0
+        best_val_top5_acc = 0.0
+        first_epoch = 1
 
-    ### Train ###
+    ### Training loop ###
 
-    train(model, criterion, optimizer, train_loader, val_loader, args)
+    not_improved = 0
+
+    for epoch in range(first_epoch, args.epochs + 1):
+
+        logging.info("Epoch [%i/%i]", epoch, args.epochs)
+        train(model, criterion, optimizer, train_dl, args.device)
+        val_top5_acc = val(model, criterion, val_dl, args.device)
+
+        if val_top5_acc > best_val_top5_acc:
+            best_val_top5_acc = val_top5_acc
+            not_improved = 0
+            logging.info("Improved\n")
+        else:
+            not_improved += 1
+            logging.info("Not improving for %i epochs\n", not_improved)
+
+        state = utils.build_state(model, optimizer, best_val_top5_acc, epoch)
+        utils.save_checkpoint(args.out_dir, state, not_improved == 0, "last_model.pth")
 
 
 if __name__ == "__main__":
