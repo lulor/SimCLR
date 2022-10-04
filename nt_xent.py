@@ -6,10 +6,10 @@ class NTXent(torch.nn.Module):
     def __init__(self, temperature, batch_size=None, device=None):
         super().__init__()
         self.temperature = temperature
-        self.batch_size = batch_size
+        self._batch_size = batch_size
         if batch_size is not None:
             assert device is not None
-            self.self_mask, self.pos_mask = self._build_masks(batch_size, device)
+            self._self_mask, self._pos_mask = self._build_masks(batch_size, device)
         self.enforce_batch_size()
 
     def _build_masks(self, N, device):
@@ -21,7 +21,7 @@ class NTXent(torch.nn.Module):
 
     def enforce_batch_size(self, enforce=True):
         # If a batch size was not spcified, we have nothing to enforce
-        if self.batch_size is None:
+        if self._batch_size is None:
             enforce = False
         self._enforce_batch_size = enforce
 
@@ -34,8 +34,8 @@ class NTXent(torch.nn.Module):
 
         # If a batch_size was specified at build time, ensure that it matches N
         if self._enforce_batch_size:
-            assert N == self.batch_size
-            self_mask, pos_mask = self.self_mask, self.pos_mask
+            assert N == self._batch_size
+            self_mask, pos_mask = self._self_mask, self._pos_mask
         else:
             self_mask, pos_mask = self._build_masks(N, z[0].device)
 
