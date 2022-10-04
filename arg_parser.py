@@ -8,6 +8,13 @@ def parse_arguments(mode="simclr"):
 
     parser.add_argument("--dataset_dir", type=str, help="Dataset path")
 
+    parser.add_argument(
+        "--device",
+        type=str,
+        choices=["cpu", "cuda", "mps", None],
+        default=None,
+    )
+
     if mode == "visualize":
         parser.add_argument(
             "--n",
@@ -41,13 +48,6 @@ def parse_arguments(mode="simclr"):
         )
 
         parser.add_argument(
-            "--device",
-            type=str,
-            choices=["cpu", "cuda", "mps", None],
-            default=None,
-        )
-
-        parser.add_argument(
             "--lr",
             type=float,
             default=5e-04,
@@ -67,24 +67,22 @@ def parse_arguments(mode="simclr"):
         parser.add_argument("--cutmix", action="store_true")
         parser.set_defaults(cutmix=False)
 
-        # LogReg
-
+    elif mode == "logreg":
         parser.add_argument(
-            "--logistic_lr",
+            "--lr",
             type=float,
             default=1e-05,
             help="LogReg Learning rate",
         )
-
         parser.add_argument(
-            "--logistic_weight_decay",
+            "--weight_decay",
             type=float,
             default=1e-03,
             help="LogReg Weight Decay",
         )
-
-        parser.add_argument("--logistic_epochs", type=int, default=100)
-        parser.add_argument("--logistic_batch_size", type=int, default=64)
+        parser.add_argument("--epochs", type=int, default=100)
+        parser.add_argument("--batch_size", type=int, default=64)
+        parser.add_argument("--encoder_path", type=str, default=None)
 
     else:
         raise RuntimeError(f"Illegal mode received: {mode}")
