@@ -50,7 +50,7 @@ class NTXent(torch.nn.Module):
         sim.masked_fill_(self_mask, float("-inf"))
 
         # Select the similarities of the positive pairs
-        positives_sim = torch.masked_select(sim, pos_mask)
+        positives_sim = sim.masked_select(pos_mask)
 
         # Compute the loss for each sample
         losses = -positives_sim + torch.logsumexp(sim, 1)

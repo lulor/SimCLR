@@ -8,7 +8,7 @@ class Identity(nn.Module):
 
 
 class SimCLR(nn.Module):
-    def __init__(self, encoder="resnet18", projection_dim=128):
+    def __init__(self, encoder="resnet18", projection_features=128):
         super().__init__()
 
         encoders = {
@@ -20,22 +20,17 @@ class SimCLR(nn.Module):
             raise RuntimeError(f"Unknown encoder received: {encoder}")
 
         # Build encoder
-        encoder = encoders[encoder]()
-
-        # Save output dimensionality
-        encoder_out_dim = encoder.fc.in_features
-
+        self.encoder = encoders[encoder]()
+        # Save encoder output dimensionality
+        self.encoder_out_features = self.encoder.fc.in_features
         # Remove final FC layer
-        encoder.fc = Identity()
-
-        # Encoder
-        self.encoder = encoder
+        self.encoder.fc = Identity()
 
         # Projection head
         self.projection = nn.Sequential(
-            nn.Linear(encoder_out_dim, projection_dim),
+            nn.Linear(self.encoder_out_features, self.encoder_out_features),
             nn.ReLU(),
-            nn.Linear(projection_dim, projection_dim),
+            nn.Linear(self.encoder_out_features, projection_features),
         )
 
     def forward(self, x):
