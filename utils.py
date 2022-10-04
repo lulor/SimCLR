@@ -27,8 +27,6 @@ def setup_logging(
         debug_filename (str): the name of the debug file. if None, don't create debug file
     """
 
-    output_folder = os.path.join(output_folder, "logs")
-
     if os.path.exists(output_folder):
         raise FileExistsError(f"{output_folder} already exists!")
     os.makedirs(output_folder, exist_ok=True)

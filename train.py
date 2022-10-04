@@ -1,4 +1,5 @@
 import logging
+import os
 
 from torch import optim
 from tqdm.auto import tqdm
@@ -69,7 +70,7 @@ def main():
         args.device = utils.get_device()
 
     args.out_dir = utils.get_run_out_dir(args.out_dir)
-    utils.setup_logging(args.out_dir)
+    utils.setup_logging(os.path.join(args.out_dir, "logs"))
     logging.debug(args)
     logging.info("Using device %s\n", args.device)
 
@@ -91,7 +92,7 @@ def main():
 
     model = SimCLR(
         encoder=args.encoder,
-        projection_dim=args.projection_dim,
+        projection_features=args.projection_dim,
     ).to(args.device)
 
     criterion = NTXent(args.temperature, args.batch_size, args.device)
