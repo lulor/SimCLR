@@ -21,37 +21,50 @@ def step(imgs, device, model, criterion, optimizer=None):
     imgs = utils.move_iterable_to(imgs, device)
 
     _, feats = model(imgs)
-    loss = criterion(feats)
+    loss, sums = criterion(feats)
 
     if optimizer is not None:  # i.e. training mode
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-    return loss.item()
+    return loss.item(), sums
 
 
 def train(model, criterion, optimizer, train_loader, val_loader, args):
 
+    not_improved = 0
+    best_val_top5_acc = 0.0
+
     for epoch in range(args.first_epoch, args.epochs + 1):
+
+        logging.info("Epoch [%i/%i]", epoch, args.epochs)
 
         ### Training ###
 
-        logging.info("Training epoch %i", epoch)
         model.train()
-        criterion.enforce_batch_size()
-        running_loss = 0.0
+        criterion.enforce_batch_size()  # all batches have the same size
 
-        train_pbar = tqdm(train_loader, ncols=80)
-        for imgs, _ in train_pbar:
-            loss = step(imgs, args.device, model, criterion, optimizer)
+        running_loss = 0.0
+        running_top1 = 0.0
+        running_top5 = 0.0
+
+        pbar = tqdm(train_loader, ncols=100)
+        for imgs, _ in pbar:
+            loss, sums = step(imgs, args.device, model, criterion, optimizer)
             running_loss += loss
-            train_pbar.set_postfix({"batch_loss": loss})
+            top1_sum, top5_sum = sums
+            top1_acc = top1_sum / (train_loader.batch_size * 2)
+            top5_acc = top5_sum / (train_loader.batch_size * 2)
+            running_top1 += top1_acc
+            running_top5 += top5_acc
+            pbar.set_postfix_str(utils.postfix_str(top1_acc, top5_acc, loss))
 
         logging.info(
-            "Epoch %i completed [avg_loss: %f]\n",
-            epoch,
+            "Training complete [avg_loss: %.4f, top1: %.2f, top5: %.2f]",
             running_loss / len(train_loader),
+            running_top1 / len(train_loader) * 100,
+            running_top5 / len(train_loader) * 100,
         )
 
         ### Validation ###
@@ -59,9 +72,32 @@ def train(model, criterion, optimizer, train_loader, val_loader, args):
         model.eval()
         criterion.enforce_batch_size(False)
 
-        val_pbar = tqdm(val_loader, ncols=80)
-        for imgs, _ in val_pbar:
-            step(imgs, args.device, model, criterion)
+        running_top1 = 0.0
+        running_top5 = 0.0
+        n_samples = 0
+
+        pbar = tqdm(val_loader, ncols=70)
+        for imgs, _ in pbar:
+            batch_size = 2 * imgs[0].size(0)  # because of the augmentation
+            n_samples += batch_size
+            _, (top1_sum, top5_sum) = step(imgs, args.device, model, criterion)
+            top1_acc = top1_sum / batch_size
+            top5_acc = top5_sum / batch_size
+            running_top1 += top1_sum
+            running_top5 += top5_sum
+            pbar.set_postfix_str(utils.postfix_str(top1_acc, top5_acc))
+
+        val_top5_acc = running_top5 / n_samples * 100
+
+        logging.info(
+            "Validation complete [top1: %.2f, top5: %.2f]\n",
+            running_top1 / n_samples * 100,
+            val_top5_acc,
+        )
+
+        if val_top5_acc < best_val_top5_acc:
+            not_improved += 1
+            logging.info("Not improving since %i epochs", not_improved)
 
 
 def main():

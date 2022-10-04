@@ -138,3 +138,12 @@ def build_data_loader(dataset, batch_size, mode):
 def move_iterable_to(x_iterable, device):
     iterable_type = type(x_iterable)
     return iterable_type(x_i.to(device) for x_i in x_iterable)
+
+
+def postfix_str(top1_acc, top5_acc, loss=None):
+    str_ = ""
+    if loss is not None:
+        str_ += f"loss: {loss:5.3f}, "
+    str_ += f"top1: {(top1_acc * 100):4.1f}, "
+    str_ += f"top5: {(top5_acc * 100):4.1f}"
+    return str_
