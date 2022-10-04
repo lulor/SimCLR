@@ -34,6 +34,13 @@ def parse_arguments(mode="simclr"):
         parser.add_argument("--out_dir", type=str, default=".")
 
         parser.add_argument(
+            "--encoder",
+            type=str,
+            choices=["resnet18", "resnet50"],
+            default="resnet18",
+        )
+
+        parser.add_argument(
             "--device",
             type=str,
             choices=["cpu", "cuda", "mps", None],

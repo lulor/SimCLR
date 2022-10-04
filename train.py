@@ -90,7 +90,7 @@ def main():
     ### Model, Loss and Optimizer ###
 
     model = SimCLR(
-        encoder="resnet18",
+        encoder=args.encoder,
         projection_dim=args.projection_dim,
     ).to(args.device)
 
