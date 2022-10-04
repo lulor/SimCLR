@@ -95,9 +95,11 @@ def train(model, criterion, optimizer, train_loader, val_loader, args):
             val_top5_acc,
         )
 
-        if val_top5_acc < best_val_top5_acc:
+        if val_top5_acc > best_val_top5_acc:
+            best_val_top5_acc = val_top5_acc
+            not_improved = 0
+        else:
             not_improved += 1
-            logging.info("Not improving since %i epochs", not_improved)
 
 
 def main():
