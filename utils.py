@@ -1,6 +1,7 @@
 import logging
 import os
 import random
+import shutil
 import sys
 import traceback
 
@@ -147,3 +148,33 @@ def postfix_str(top1_acc, top5_acc, loss=None):
     str_ += f"top1: {(top1_acc * 100):4.1f}, "
     str_ += f"top5: {(top5_acc * 100):4.1f}"
     return str_
+
+
+def build_state(model, optimizer, best_val_top5_acc, epoch):
+    return {
+        "model_state_dict": model.state_dict(),
+        "optimizer_state_dict": optimizer.state_dict(),
+        "best_val_top5": best_val_top5_acc,
+        "epoch": epoch,
+    }
+
+
+def save_checkpoint(output_folder, state, is_best, filename):
+    file_path = os.path.join(output_folder, filename)
+    torch.save(state, file_path)
+    if is_best:
+        shutil.copyfile(file_path, os.path.join(output_folder, "best_model.pth"))
+
+
+def load_checkpoint(file_path):
+    if not os.path.isfile(file_path):
+        raise FileNotFoundError(f"Checkpoint '{file_path}' does not exist")
+    return torch.load(file_path)
+
+
+def resume_from_state(state, model, optimizer):
+    model.load_state_dict(state["model_state_dict"])
+    optimizer.load_state_dict(state["optimizer_state_dict"])
+    epoch = state["epoch"]
+    best_val_top5_acc = state["best_val_top5"]
+    return epoch, best_val_top5_acc

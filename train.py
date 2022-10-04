@@ -34,7 +34,7 @@ def step(imgs, device, model, criterion, optimizer=None):
 def train(model, criterion, optimizer, train_loader, val_loader, args):
 
     not_improved = 0
-    best_val_top5_acc = 0.0
+    best_val_top5_acc = args.best_val_top5_acc
 
     for epoch in range(args.first_epoch, args.epochs + 1):
 
@@ -90,7 +90,7 @@ def train(model, criterion, optimizer, train_loader, val_loader, args):
         val_top5_acc = running_top5 / n_samples * 100
 
         logging.info(
-            "Validation complete [top1: %.2f, top5: %.2f]\n",
+            "Validation complete [top1: %.2f, top5: %.2f]",
             running_top1 / n_samples * 100,
             val_top5_acc,
         )
@@ -98,8 +98,13 @@ def train(model, criterion, optimizer, train_loader, val_loader, args):
         if val_top5_acc > best_val_top5_acc:
             best_val_top5_acc = val_top5_acc
             not_improved = 0
+            logging.info("Improved\n")
         else:
             not_improved += 1
+            logging.info("Not improving since %i epochs\n", not_improved)
+
+        state = utils.build_state(model, optimizer, best_val_top5_acc, epoch)
+        utils.save_checkpoint(args.out_dir, state, not_improved == 0, "last_model.pth")
 
 
 def main():
@@ -141,9 +146,19 @@ def main():
         weight_decay=args.weight_decay,
     )
 
+    ### Model resume ###
+
+    if args.reload is not None:
+        checkpoint = utils.load_checkpoint(args.reload)
+        epoch, best_val_top5_acc = utils.resume_from_state(checkpoint, model, optimizer)
+        args.first_epoch = epoch + 1
+        args.best_val_top5_acc = best_val_top5_acc
+    else:
+        args.first_epoch = 1
+        args.best_val_top5_acc = 0.0
+
     ### Train ###
 
-    args.first_epoch = 1
     train(model, criterion, optimizer, train_loader, val_loader, args)
 
 
