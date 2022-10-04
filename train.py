@@ -139,6 +139,11 @@ def main():
         checkpoint = utils.load_checkpoint(args.reload)
         epoch, best_val_top5_acc = utils.resume_from_state(checkpoint, model, optimizer)
         first_epoch = epoch + 1
+        logging.info(
+            "Checkpoint reloaded (epoch: %i, best_val_top5_acc: %.2f)\n",
+            epoch,
+            best_val_top5_acc,
+        )
     else:
         best_val_top5_acc = 0.0
         first_epoch = 1
