@@ -27,10 +27,14 @@ class SimCLR(nn.Module):
         self.encoder.fc = Identity()
 
         # Projection head
-        self.projection = nn.Sequential(
-            nn.Linear(self.encoder_out_features, self.encoder_out_features),
-            nn.ReLU(),
-            nn.Linear(self.encoder_out_features, projection_features),
+        self.projection = (
+            nn.Sequential(
+                nn.Linear(self.encoder_out_features, self.encoder_out_features),
+                nn.ReLU(),
+                nn.Linear(self.encoder_out_features, projection_features),
+            )
+            if projection_features is not None
+            else None
         )
 
     def forward(self, x):

@@ -7,13 +7,13 @@ def parse_arguments(mode="simclr"):
     )
 
     parser.add_argument("--dataset_dir", type=str, help="Dataset path")
-
     parser.add_argument(
         "--device",
         type=str,
         choices=["cpu", "cuda", "mps", None],
         default=None,
     )
+    parser.add_argument("--seed", type=int, default=42)
 
     if mode == "visualize":
         parser.add_argument(
@@ -31,15 +31,8 @@ def parse_arguments(mode="simclr"):
         parser.add_argument("--freeze_layers", action="store_true")
         parser.set_defaults(freeze_layers=False)
 
-    elif mode == "simclr":
-        parser.add_argument("--batch_size", type=int, default=256, help="Batch size")
+    elif mode in ("simclr", "logreg"):
         parser.add_argument("--reload", type=str, default=None)
-        parser.add_argument("--seed", type=int, default=42)
-        parser.add_argument("--projection_dim", type=int, default=128)
-        parser.add_argument("--temperature", type=float, default=0.1)
-        parser.add_argument("--epochs", type=int, default=300)
-        parser.add_argument("--out_dir", type=str, default=".")
-
         parser.add_argument(
             "--encoder",
             type=str,
@@ -47,42 +40,48 @@ def parse_arguments(mode="simclr"):
             default="resnet18",
         )
 
-        parser.add_argument(
-            "--lr",
-            type=float,
-            default=5e-04,
-            help="Learning rate",
-        )
+        if mode == "simclr":
+            parser.add_argument("--projection_dim", type=int, default=128)
+            parser.add_argument("--temperature", type=float, default=0.1)
+            parser.add_argument("--out_dir", type=str, default=".")
 
-        parser.add_argument(
-            "--weight_decay",
-            type=float,
-            default=1e-04,
-            help="Weight Decay",
-        )
+            parser.add_argument(
+                "--batch_size", type=int, default=256, help="Batch size"
+            )
+            parser.add_argument("--epochs", type=int, default=300)
+            parser.add_argument(
+                "--lr",
+                type=float,
+                default=5e-04,
+                help="Learning rate",
+            )
+            parser.add_argument(
+                "--weight_decay",
+                type=float,
+                default=1e-04,
+                help="Weight Decay",
+            )
 
-        parser.add_argument("--mixup", action="store_true")
-        parser.set_defaults(mixup=False)
+            parser.add_argument("--mixup", action="store_true")
+            parser.set_defaults(mixup=False)
+            parser.add_argument("--cutmix", action="store_true")
+            parser.set_defaults(cutmix=False)
 
-        parser.add_argument("--cutmix", action="store_true")
-        parser.set_defaults(cutmix=False)
-
-    elif mode == "logreg":
-        parser.add_argument(
-            "--lr",
-            type=float,
-            default=1e-05,
-            help="LogReg Learning rate",
-        )
-        parser.add_argument(
-            "--weight_decay",
-            type=float,
-            default=1e-03,
-            help="LogReg Weight Decay",
-        )
-        parser.add_argument("--epochs", type=int, default=100)
-        parser.add_argument("--batch_size", type=int, default=64)
-        parser.add_argument("--encoder_path", type=str, default=None)
+        else:  # logreg
+            parser.add_argument("--batch_size", type=int, default=64)
+            parser.add_argument("--epochs", type=int, default=100)
+            parser.add_argument(
+                "--lr",
+                type=float,
+                default=1e-05,
+                help="LogReg Learning rate",
+            )
+            parser.add_argument(
+                "--weight_decay",
+                type=float,
+                default=1e-03,
+                help="LogReg Weight Decay",
+            )
 
     else:
         raise RuntimeError(f"Illegal mode received: {mode}")

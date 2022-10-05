@@ -178,3 +178,13 @@ def resume_from_state(state, model, optimizer):
     epoch = state["epoch"]
     best_val_top5_acc = state["best_val_top5"]
     return epoch, best_val_top5_acc
+
+
+def reload_simclr_encoder(state, model):
+    if model.projection is not None:
+        raise RuntimeError("Unexpected projection in model to reload")
+    model_state_dict = state["model_state_dict"]
+    encoder_state_dict = {
+        k: v for k, v in model_state_dict.items() if not k.startswith("projection")
+    }
+    model.load_state_dict(encoder_state_dict)
