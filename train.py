@@ -37,25 +37,28 @@ def train(model, criterion, optimizer, train_dl, device):
     criterion.enforce_batch_size()  # all batches have the same size
 
     running_loss = 0.0
-    running_top1 = 0.0
-    running_top5 = 0.0
+    running_top1_acc = 0.0
+    running_top5_acc = 0.0
 
     pbar = tqdm(train_dl, ncols=100)
     for imgs, _ in pbar:
-        loss, top_acc = step(imgs, device, model, criterion, optimizer)
+        loss, ((n_top1, n_top5), batch_size) = step(
+            imgs, device, model, criterion, optimizer
+        )
         running_loss += loss
-        (top1_sum, top5_sum), batch_size = top_acc
-        top1_acc = top1_sum / batch_size
-        top5_acc = top5_sum / batch_size
-        running_top1 += top1_acc
-        running_top5 += top5_acc
-        pbar.set_postfix_str(utils.postfix_str(top1_acc, top5_acc, loss))
+        top1_acc = n_top1 / batch_size
+        top5_acc = n_top5 / batch_size
+        running_top1_acc += top1_acc
+        running_top5_acc += top5_acc
+        pbar.set_postfix_str(
+            utils.postfix_str({"loss": loss, "top1": top1_acc, "top5": top5_acc})
+        )
 
     logging.info(
-        "Training complete [avg_loss: %.4f, top1: %.2f, top5: %.2f]",
+        "Training complete [loss: %.3f, top1: %.3f, top5: %.3f]",
         running_loss / len(train_dl),
-        running_top1 / len(train_dl) * 100,
-        running_top5 / len(train_dl) * 100,
+        running_top1_acc / len(train_dl),
+        running_top5_acc / len(train_dl),
     )
 
 
@@ -65,29 +68,28 @@ def val(model, criterion, val_dl, device):
     model.eval()
     criterion.enforce_batch_size(False)
 
-    n_samples = 0
-    running_top1 = 0
-    running_top5 = 0
+    tot_samples = 0
+    tot_top1 = 0
+    tot_top5 = 0
 
     pbar = tqdm(val_dl, ncols=70)
     for imgs, _ in pbar:
-        _, (top_sums, batch_size) = step(imgs, device, model, criterion)
-        n_samples += batch_size
-        top1_sum, top5_sum = top_sums
-        top1_acc = top1_sum / batch_size
-        top5_acc = top5_sum / batch_size
-        running_top1 += top1_sum
-        running_top5 += top5_sum
-        pbar.set_postfix_str(utils.postfix_str(top1_acc, top5_acc))
+        _, ((n_top1, n_top5), batch_size) = step(imgs, device, model, criterion)
+        tot_samples += batch_size
+        tot_top1 += n_top1
+        tot_top5 += n_top5
+        top1_acc = n_top1 / batch_size
+        top5_acc = n_top5 / batch_size
+        pbar.set_postfix_str(utils.postfix_str({"top1": top1_acc, "top5": top5_acc}))
 
-    val_top1_acc = running_top1 / n_samples * 100
-    val_top5_acc = running_top5 / n_samples * 100
+    epoch_top1_acc = tot_top1 / tot_samples
+    epoch_top5_acc = tot_top5 / tot_samples
 
     logging.info(
-        "Validation complete [top1: %.2f, top5: %.2f]", val_top1_acc, val_top5_acc
+        "Validation complete [top1: %.3f, top5: %.3f]", epoch_top1_acc, epoch_top5_acc
     )
 
-    return val_top1_acc, val_top5_acc
+    return epoch_top1_acc, epoch_top5_acc
 
 
 def main():
@@ -138,6 +140,8 @@ def main():
     if args.reload is not None:
         checkpoint = utils.load_checkpoint(args.reload)
         epoch, best_val_top5_acc = utils.resume_from_state(checkpoint, model, optimizer)
+        if best_val_top5_acc > 1.0:
+            best_val_top5_acc /= 100  # For compatibility with old code
         first_epoch = epoch + 1
         logging.info(
             "Checkpoint reloaded (epoch: %i, best_val_top5_acc: %.2f)\n",

@@ -141,12 +141,12 @@ def move_iterable_to(x_iterable, device):
     return iterable_type(x_i.to(device) for x_i in x_iterable)
 
 
-def postfix_str(top1_acc, top5_acc, loss=None):
+def postfix_str(postfix_dict):
     str_ = ""
-    if loss is not None:
-        str_ += f"loss: {loss:5.3f}, "
-    str_ += f"top1:{(top1_acc * 100):5.1f}, "
-    str_ += f"top5:{(top5_acc * 100):5.1f}"
+    for name, value in postfix_dict.items():
+        if len(str_) > 0:
+            str_ += ", "
+        str_ += f"{name}: {value:5.3f}"
     return str_
 
 
