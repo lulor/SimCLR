@@ -80,13 +80,13 @@ def test(model, criterion, eval_dl, device):
 
 
 @torch.no_grad()
-def extract_features(encoder, ds_dict, args):
+def extract_features(encoder, ds_dict, batch_size, device):
     encoder.eval()
 
     feats_dict = {}
 
     for ds_name, dataset in ds_dict.items():
-        loader = utils.build_data_loader(dataset, args.batch_size, "eval")
+        loader = utils.build_data_loader(dataset, batch_size, "eval")
 
         feats_list = []
         labels_list = []
@@ -95,7 +95,7 @@ def extract_features(encoder, ds_dict, args):
 
         pbar = tqdm(loader, ncols=50)
         for imgs, labels in pbar:
-            imgs = imgs.to(args.device)
+            imgs = imgs.to(device)
             (feats,), _ = encoder((imgs,))
             feats_list.append(feats.cpu())
             labels_list.append(labels)
@@ -142,7 +142,9 @@ def main():
     encoder = SimCLR(encoder=args.encoder, projection_features=None).to(args.device)
     state = utils.load_checkpoint(args.reload)
     utils.reload_simclr_encoder(state, encoder)
-    feats_dict = extract_features(encoder, ds_dict, args)
+    feats_dict = extract_features(
+        encoder, ds_dict, args.encoder_batch_size, args.device
+    )
 
     ### DataLoaders ###
 

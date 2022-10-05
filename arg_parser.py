@@ -68,6 +68,7 @@ def parse_arguments(mode="simclr"):
             parser.set_defaults(cutmix=False)
 
         else:  # logreg
+            parser.add_argument("--encoder_batch_size", type=int, default=512)
             parser.add_argument("--batch_size", type=int, default=64)
             parser.add_argument("--epochs", type=int, default=100)
             parser.add_argument(
