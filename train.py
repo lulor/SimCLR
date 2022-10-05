@@ -80,15 +80,14 @@ def val(model, criterion, val_dl, device):
         running_top5 += top5_sum
         pbar.set_postfix_str(utils.postfix_str(top1_acc, top5_acc))
 
+    val_top1_acc = running_top1 / n_samples * 100
     val_top5_acc = running_top5 / n_samples * 100
 
     logging.info(
-        "Validation complete [top1: %.2f, top5: %.2f]",
-        running_top1 / n_samples * 100,
-        val_top5_acc,
+        "Validation complete [top1: %.2f, top5: %.2f]", val_top1_acc, val_top5_acc
     )
 
-    return val_top5_acc
+    return val_top1_acc, val_top5_acc
 
 
 def main():
@@ -134,7 +133,7 @@ def main():
         weight_decay=args.weight_decay,
     )
 
-    ### Model resume ###
+    ### Training resuming ###
 
     if args.reload is not None:
         checkpoint = utils.load_checkpoint(args.reload)
@@ -157,7 +156,7 @@ def main():
 
         logging.info("Epoch [%i/%i]", epoch, args.epochs)
         train(model, criterion, optimizer, train_dl, args.device)
-        val_top5_acc = val(model, criterion, val_dl, args.device)
+        _, val_top5_acc = val(model, criterion, val_dl, args.device)
 
         if val_top5_acc > best_val_top5_acc:
             best_val_top5_acc = val_top5_acc
