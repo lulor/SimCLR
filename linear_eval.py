@@ -180,6 +180,7 @@ def main():
         train(model, criterion, optimizer, train_dl, args.device)
         val_acc = test(model, criterion, val_dl, args.device)
         if val_acc > best_val_acc:
+            best_val_acc = val_acc
             best_model = deepcopy(model)
         print()
 
