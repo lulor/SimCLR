@@ -138,7 +138,7 @@ def main():
     ### Training resuming ###
 
     if args.reload is not None:
-        checkpoint = utils.load_checkpoint(args.reload)
+        checkpoint = utils.load_checkpoint(args.reload, args.device)
         epoch, best_val_top5_acc = utils.resume_from_state(checkpoint, model, optimizer)
         if best_val_top5_acc > 1.0:
             best_val_top5_acc /= 100  # For compatibility with old code

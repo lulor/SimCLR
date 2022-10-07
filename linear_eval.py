@@ -140,7 +140,7 @@ def main():
     ### Feature extraction ###
 
     encoder = SimCLR(encoder=args.encoder, projection_features=None).to(args.device)
-    state = utils.load_checkpoint(args.reload)
+    state = utils.load_checkpoint(args.reload, args.device)
     utils.reload_simclr_encoder(state, encoder)
     feats_dict = extract_features(
         encoder, ds_dict, args.encoder_batch_size, args.device

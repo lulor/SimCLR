@@ -166,10 +166,10 @@ def save_checkpoint(output_folder, state, is_best, filename):
         shutil.copyfile(file_path, os.path.join(output_folder, "best_model.pth"))
 
 
-def load_checkpoint(file_path):
+def load_checkpoint(file_path, device):
     if not os.path.isfile(file_path):
         raise FileNotFoundError(f"Checkpoint '{file_path}' does not exist")
-    return torch.load(file_path)
+    return torch.load(file_path, map_location=device)
 
 
 def resume_from_state(state, model, optimizer):
