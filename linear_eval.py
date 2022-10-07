@@ -96,7 +96,7 @@ def extract_features(encoder, ds_dict, batch_size, device):
         pbar = tqdm(loader, ncols=50)
         for imgs, labels in pbar:
             imgs = imgs.to(device)
-            (feats,), _ = encoder((imgs,))
+            (feats,) = encoder((imgs,))
             feats_list.append(feats.cpu())
             labels_list.append(labels)
 

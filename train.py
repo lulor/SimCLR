@@ -20,7 +20,7 @@ def step(imgs, device, model, criterion, optimizer=None):
 
     imgs = utils.move_iterable_to(imgs, device)
 
-    _, feats = model(imgs)
+    feats = model(imgs)
     loss, top_acc = criterion(feats)
 
     if optimizer is not None:  # i.e. training mode
