@@ -18,7 +18,7 @@ def step(imgs, device, model, criterion, optimizer=None):
     if optimizer is None, no backward pass will be performed
     """
 
-    imgs = utils.move_iterable_to(imgs, device)
+    imgs = tuple(imgs_i.to(device) for imgs_i in imgs)
 
     feats = model(imgs)
     loss, top_acc = criterion(feats)

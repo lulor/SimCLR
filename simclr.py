@@ -38,10 +38,11 @@ class SimCLR(nn.Module):
         )
 
     def forward(self, x):
-        iterable_type = type(x)
-        h = iterable_type(self.encoder(x_i) for x_i in x)
+        if not isinstance(x, tuple):
+            raise RuntimeError(f"SimCLR: expected tuple, but received {type(x)}")
+        h = tuple(self.encoder(x_i) for x_i in x)
         return (
-            iterable_type(self.projection(h_i) for h_i in h)  # z
+            tuple(self.projection(h_i) for h_i in h)  # z
             if self.projection is not None
             else h
         )

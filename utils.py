@@ -136,11 +136,6 @@ def build_data_loader(dataset, batch_size, mode):
     )
 
 
-def move_iterable_to(x_iterable, device):
-    iterable_type = type(x_iterable)
-    return iterable_type(x_i.to(device) for x_i in x_iterable)
-
-
 def postfix_str(postfix_dict):
     str_ = ""
     for name, value in postfix_dict.items():
