@@ -2,11 +2,6 @@ from torch import nn
 from torchvision import models
 
 
-class Identity(nn.Module):
-    def forward(self, x):
-        return x
-
-
 class SimCLR(nn.Module):
     def __init__(self, encoder="resnet18", projection_features=128):
         super().__init__()
@@ -24,7 +19,7 @@ class SimCLR(nn.Module):
         # Save encoder output dimensionality
         self.encoder_out_features = self.encoder.fc.in_features
         # Remove final FC layer
-        self.encoder.fc = Identity()
+        self.encoder.fc = nn.Identity()
 
         # Projection head
         self.projection = (
